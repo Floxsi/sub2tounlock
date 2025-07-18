@@ -1,16 +1,16 @@
 (function () {
-  function showBlockPopup(reason) {
-    // Blur all page
+  function showBlockPopup(reason, detail) {
+    // Blur background
     document.body.style.filter = "blur(6px)";
     document.body.style.pointerEvents = "none";
 
-    // Create popup container
+    // Overlay
     const overlay = document.createElement("div");
     overlay.style = `
       position: fixed;
       top: 0; left: 0;
       width: 100vw; height: 100vh;
-      background: rgba(10, 10, 10, 0.9);
+      background: rgba(10, 10, 10, 0.92);
       color: white;
       z-index: 999999;
       display: flex;
@@ -33,7 +33,7 @@
     modal.innerHTML = `
       <h2 style="font-size: 26px; margin-bottom: 10px;">🚫 ${reason}</h2>
       <p style="font-size: 17px; margin-bottom: 15px;">
-        Please disable your AdBlock or Brave Shield and reload the page.
+        ${detail}
       </p>
     `;
 
@@ -41,53 +41,17 @@
     document.body.appendChild(overlay);
   }
 
-  function generateBaitClass(length = 8) {
-    return 'ad_' + Math.random().toString(36).substring(2, 2 + length);
+  function isNotChrome() {
+    const ua = navigator.userAgent.toLowerCase();
+    const isChrome = /chrome/.test(ua) && !/edge|edg|opr|brave/.test(ua);
+    return !isChrome;
   }
 
-  const baitClass = generateBaitClass();
-  const bait = document.createElement("div");
-  bait.className = baitClass;
-  bait.style.cssText = `
-    width: 1px !important;
-    height: 1px !important;
-    position: absolute !important;
-    left: -9999px !important;
-    top: -9999px !important;
-    background: url('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js');
-  `;
-  document.body.appendChild(bait);
-
-  function checkAdblock() {
-    let blocked = bait.offsetHeight === 0 || bait.offsetParent === null;
-
-    fetch("https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js", {
-      method: "HEAD",
-      mode: "no-cors"
-    })
-      .then(() => {
-        if (blocked) showBlockPopup("AdBlock Detected");
-      })
-      .catch(() => {
-        showBlockPopup("AdBlock Detected");
-      });
-  }
-
-  async function checkBrave() {
-    if (navigator.brave && await navigator.brave.isBrave()) {
-      showBlockPopup("Brave Browser Detected");
+  function checkBrowser() {
+    if (isNotChrome()) {
+      showBlockPopup("Browser Not Supported", "This website only works in Chrome. Please open in Google Chrome browser.");
     }
   }
 
-  // Initial check
-  window.addEventListener("load", () => {
-    checkAdblock();
-    checkBrave();
-  });
-
-  // Re-check every 15s
-  setInterval(() => {
-    checkAdblock();
-    checkBrave();
-  }, 15000);
+  window.addEventListener("load", checkBrowser);
 })();
